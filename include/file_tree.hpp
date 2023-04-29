@@ -65,25 +65,25 @@ class FileTree {
 private:
     FileNode root;
 
-public:
-    FileTree(fs::path base_file) : root(base_file) {}
-
     cppcoro::generator<FileNode*> getNodes(FileNode& parent) {
-        stack<FileNode*> stack_;
-        stack_.push(&parent);
-        while (!stack_.empty()) {
-            FileNode* node = stack_.top();
-            stack_.pop();
+    stack<FileNode*> stack_;
+    stack_.push(&parent);
+    while (!stack_.empty()) {
+        FileNode* node = stack_.top();
+        stack_.pop();
 
-            if (!node->has_children) {
-                co_yield node;
-            } else {
-                for (auto& child : *node->children) {
-                    stack_.push(child.get());
-                }
+        if (!node->has_children) {
+            co_yield node;
+        } else {
+            for (auto& child : *node->children) {
+                stack_.push(child.get());
             }
         }
     }
+}
+
+public:
+    FileTree(fs::path base_file) : root(base_file) {}
     
     void fileAction(function<void(FileNode*)> action) {
         for (auto f : getNodes(root)) {
