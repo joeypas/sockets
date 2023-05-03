@@ -10,15 +10,15 @@ int main() {
         auto action = [root](FileNode* node) {
             if (node->path == root->path) {
                 fs::path p(node->path);
-                cout << (string)p.filename() << endl;
+                cout << static_cast<string>(p.filename()) << endl;
             } else {
                 auto parent = node->getParent();
                 string name;
                 while (parent->path != root->path) {
-                    name = (string)parent->path.filename() + "/" + name;
+                    name = static_cast<string>(parent->path.filename()) + "/" + name;
                     parent = parent->parent;
                 }
-                cout << name << (string)node->path.filename() << endl;
+                cout << name << static_cast<string>(node->path.filename()) << endl;
             }
         };
 

@@ -44,7 +44,7 @@ struct FileNode : public enable_shared_from_this<FileNode> {
     }
 
     // Finds children and constructs nodes from them
-    void getChildren(FileNode *node) {
+    void getChildren(FileNode* node) {
         for (auto const dir_entry : fs::directory_iterator(node->path)) {
             node->children->push_back(make_shared<FileNode>(dir_entry, node));
         }
@@ -99,6 +99,7 @@ public:
     FileNode* getRoot() {
         return new FileNode(root);
     }
+
 };
 
 #endif
