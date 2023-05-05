@@ -4,14 +4,11 @@
 #include <string>
 #include <vector>
 #include <stack>
-#include <deque>
 #include <memory>
-#include <iostream>
 #include <filesystem>
 #include <functional>
 #include <exception>
 #include <thread>
-#include <atomic>
 #include <cppcoro/recursive_generator.hpp>
 #include <cppcoro/generator.hpp>
 
@@ -38,10 +35,8 @@ struct FileNode {
         } else if (!fs::is_empty(path)) {
             has_children = false;
         }
-        std::cout << "Made it" << std::endl;
     }
-    FileNode(fs::path p, FileNode* parent) : path(p) {
-        this->parent = parent;
+    FileNode(fs::path p, FileNode* parent) : path(p), parent(parent) {
         if (fs::is_directory(path)) {
             has_children = true;
             thread t(getChildren, this);

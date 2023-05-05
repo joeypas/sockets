@@ -3,7 +3,7 @@
 
 int main() {
     try {
-        FileTree ft(fs::path("/Users/josephliotta/dev"));
+        FileTree ft(fs::path("/Users/josephliotta/dev/llvm-project"));
     
         auto rootp = ft.getRootPath();
 

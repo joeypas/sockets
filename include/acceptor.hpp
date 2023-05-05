@@ -81,7 +81,7 @@ private:
             newsock->createAddr(e->rs.remote_addr);
 
             e->onNewConnection(newsock);
-            newsock->spawnTask(false);
+            newsock->spawnTask(false, onError);
         }
     }
 

@@ -102,7 +102,7 @@ public:
         onConnected(addr);
 
 
-        std::thread t(createTask, this);
+        std::thread t(createTask, this, onError);
         t.detach();
     } 
     
@@ -154,9 +154,9 @@ public:
     /**
      * Create a new thread to send and receive on 
     */
-    void spawnTask(bool del = false) {
+    void spawnTask(bool del = false, ON_ERR) {
         this->del = del;
-        std::thread t(createTask, std::move(this));
+        std::thread t(createTask, std::move(this), onError);
         t.detach();
     }
 
@@ -166,19 +166,27 @@ protected:
     /**
      * Wait for data to appear in socket, should be run in a new thread
     */
-    static void createTask(sock* s){
+    static void createTask(sock* s, ON_ERR){
         char buffer[0x1000];
         std::size_t len;
         
         len = recv(s->sockfd, buffer, 0x1000, 0);
-        if (len <= 0) {
-            if (len == 0){
+
+        while (len >= 0) {
+            if (len == 0) {
                 s->close();
                 s->del = true;
+                break;
+            } else if (len < 0) {
+                onError(errno, "Failed to Recieve");
+                s->close();
+                s->del = true;
+                break;
+            } else {
+                buffer[len] = '\0';
+                s->onMessageReceived(buffer, len);
+                len = recv(s->sockfd, buffer, 0x1000, 0);
             }
-        } else {
-            buffer[len] = '\0';
-            s->onMessageReceived(buffer, len);
         }
 
         //s->close();
