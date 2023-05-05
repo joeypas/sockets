@@ -10,6 +10,7 @@ find_package(Threads REQUIRED)
 
 add_executable(test_tree
     tests/tree_test.cpp)
+target_compile_options(test_tree PUBLIC "-g")
 target_link_libraries(test_tree PRIVATE cppcoro)
 
 add_executable(server_test

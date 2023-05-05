@@ -4,11 +4,14 @@
 #include <string>
 #include <vector>
 #include <stack>
+#include <deque>
 #include <memory>
-#include <optional>
+#include <iostream>
 #include <filesystem>
 #include <functional>
 #include <exception>
+#include <thread>
+#include <atomic>
 #include <cppcoro/recursive_generator.hpp>
 #include <cppcoro/generator.hpp>
 
@@ -20,39 +23,49 @@ namespace fs = std::filesystem;
  * Represents a file in a directory structure
  * May have a parent node or children nodes
 */
-struct FileNode : public enable_shared_from_this<FileNode> {
-    shared_ptr<FileNode> parent;
+struct FileNode {
+    FileNode* parent;
     bool has_children;
-    optional<vector<shared_ptr<FileNode>>> children;
+    vector<shared_ptr<FileNode>> children;
     fs::path path;
 
-    FileNode() : has_children(false), children(nullopt) {}
-    FileNode(fs::path p, FileNode *parent = nullptr) : path(p) {
-        if (parent != nullptr) this->parent = shared_ptr<FileNode>(parent);
-        else this->parent = nullptr;
-
-
+    FileNode() : has_children(false) {}
+    FileNode(fs::path p) : path(p), parent(nullptr) {
         if (fs::is_directory(path)) {
             has_children = true;
-            vector<shared_ptr<FileNode>> vec;
-            children = make_optional<vector<shared_ptr<FileNode>>>(vec);
-            getChildren(this);
+            thread t(getChildren, this);
+            t.join();
         } else if (!fs::is_empty(path)) {
             has_children = false;
-            children = nullopt;
+        }
+        std::cout << "Made it" << std::endl;
+    }
+    FileNode(fs::path p, FileNode* parent) : path(p) {
+        this->parent = parent;
+        if (fs::is_directory(path)) {
+            has_children = true;
+            thread t(getChildren, this);
+            t.join();
+        } else if (!fs::is_empty(path)) {
+            has_children = false;
         }
     }
 
     // Finds children and constructs nodes from them
-    void getChildren(FileNode* node) {
+    static void getChildren(FileNode* node) {
         for (auto const dir_entry : fs::directory_iterator(node->path)) {
-            node->children->push_back(make_shared<FileNode>(dir_entry, node));
+            node->children.push_back(make_shared<FileNode>(dir_entry, node));
         }
     }
 
     // Getter for parent pointer
-    shared_ptr<FileNode> getParent() {
-        return parent->shared_from_this();
+    FileNode* getParent() {
+        FileNode* p = parent;
+        return p;
+    }
+
+    fs::path getParentPath() {
+        return parent->path;
     }
 
 };
@@ -63,41 +76,56 @@ struct FileNode : public enable_shared_from_this<FileNode> {
 */
 class FileTree {
 private:
-    FileNode root;
+    shared_ptr<FileNode> root;
 
-    cppcoro::generator<FileNode*> getNodes(FileNode& parent) {
-    stack<FileNode*> stack_;
-    stack_.push(&parent);
-    while (!stack_.empty()) {
-        FileNode* node = stack_.top();
-        stack_.pop();
+    /**
+     * Non-blocking stackbased file node generator
+     * using coroutines(very fast when spawing lots of tasks)
+     * to provide an iterator like pointer after each co_yeild is called.
+     * Private function so we can properly handle iterators.
+    */
+    cppcoro::generator<shared_ptr<FileNode>> getNodes(shared_ptr<FileNode> &parent) {
+        stack<shared_ptr<FileNode>> stack_;
+        stack_.push(parent);
+        while (!stack_.empty()) {
+            auto node = stack_.top();
+            stack_.pop();
 
-        if (!node->has_children) {
-            co_yield node;
-        } else {
-            for (auto& child : *node->children) {
-                stack_.push(child.get());
+            if (!node->has_children) {
+                co_yield node;
+            } else {
+                for (auto &child : node->children) {
+                    stack_.push(child);
+                }
             }
         }
     }
-}
 
 public:
-    FileTree(fs::path base_file) : root(base_file) {}
-    
-    void fileAction(function<void(FileNode*)> action) {
-        for (auto f : getNodes(root)) {
+    FileTree(fs::path base_file) {
+        root = make_shared<FileNode>(base_file);
+    }
+
+
+    /**
+     * Uses iterator generator getNodes() to multitask retrival
+     * of nodes and preformes tasks as soon as a pointer is produced
+     * 
+     * @param action void func(FileNode*) takes pointer and performs action with it
+    */
+    void fileAction(function<void(shared_ptr<FileNode>)> action) {
+        for (auto &f : getNodes(root)) {
             action(f);
         }
     }
 
     /**
-     * Getter function for pointer to root node
+     * Getter function for reference to root node
      * 
-     * @return ptr for root node
+     * @return FileNode* root
      */
-    FileNode* getRoot() {
-        return new FileNode(root);
+    fs::path getRootPath() {
+        return root->path;
     }
 
 };
