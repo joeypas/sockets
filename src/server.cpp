@@ -94,6 +94,48 @@ int main() {
                 }
                 s->sendall(st);
             }
+            else if (message.substr(0,3) == "RET") {
+                string filename = workingDIR + "/" + message.substr(4,message.size());
+                ifstream file;
+                file.open(filename, fstream::binary);
+
+                if (!file.good()) {
+                    s->sendall("File not found");
+                } else {
+                    ret.clear();
+                    ret.shrink_to_fit();
+                    string t;
+                    while (!file.eof()) {
+                        getline(file, t);
+                        ret.append(t + "\n");
+                    }
+
+                    if (ret.length() > 0x1000){
+                        int sent = 0;
+                        int left = ret.length();
+                        
+                        while (sent < ret.length()){
+                            if (left < 0x1000) break;
+                            string tmp;
+                            char* buf = (char*)malloc(0x1000);
+                            tmp.append(ret.substr(sent, (sent + 0x1000)));
+                            strcpy(buf, tmp.c_str());
+                            s->sendall(buf, strlen(buf));
+                            sent += 0x1000;
+                            left -= 0x1000;
+                            free(buf);
+                        }
+                        char* buf = (char*)malloc(left);
+                        string tmp;
+                        tmp.append(ret.substr(sent, ret.length()));
+                        free(buf);
+                    } else {
+                        s->sendall(ret);
+                    }
+
+                }
+
+            }
             else {
                 ret = "Recieved: \"" + message + "\"";
                 ret.shrink_to_fit();

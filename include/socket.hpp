@@ -4,6 +4,7 @@
 #include "address.hpp"
 #include <sys/socket.h>
 #include <sys/poll.h>
+#include <sys/fcntl.h>
 #include <streambuf>
 #include <vector>
 #include <functional>
@@ -146,14 +147,25 @@ public:
         unsigned long bytes_left = buffer.size();
         unsigned long len = buffer.size();
 
-
+        std::cout << len << std::endl;
 
         while (sent < len) {
-            if (bytes_left > buf_size){
-                n = ::send(sockfd, buffer.data()+sent, buf_size, 0);
-            } else { 
-                n = ::send(sockfd, buffer.data()+sent, bytes_left, 0);
-            }
+            n = ::send(sockfd, buffer.data()+sent, bytes_left, 0);
+            if (n == -1) { break; }
+            sent += n;
+            bytes_left -= n;
+        }
+    }
+
+    void sendall(const char* buffer, std::size_t len)
+    {
+        int sent = 0;
+        int n;
+
+        unsigned long bytes_left = len;
+
+        while (sent < len) {
+            n = ::send(sockfd, buffer+sent, bytes_left, 0);
             if (n == -1) { break; }
             sent += n;
             bytes_left -= n;
@@ -186,6 +198,7 @@ protected:
         unsigned long len = 0;
 
         std::vector<char> compressed(0);
+        int total_len = 0;
 
         
         while (len >= 0) {
@@ -202,13 +215,17 @@ protected:
                 break;
             } else {
                 buffer::add_string_to_vector(compressed, buffer);
-                int events = poll(pfds, 1, 1);
-                if (events == 0){
+                total_len += len;
+                //int events = poll(pfds, 1, 1);
+                fcntl(s->sockfd, F_SETFL, O_NONBLOCK);
+                if (!(recv(s->sockfd, buffer, 0x1000, MSG_PEEK) >= 1)){
                     //int res = buffer::decompress_vector(compressed, decompressed);
-                    std::string data(compressed.data());
+                    std::string data(compressed.data(), total_len);
                     s->onMessageReceived(data);
                     compressed = std::vector<char>(0);
+                    total_len = 0;
                 }
+                fcntl(s->sockfd, F_SETFL, O_FSYNC);
             }
             free(buffer);
         }
