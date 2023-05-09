@@ -5,14 +5,14 @@ int main() {
     try {
         FileTree ft(fs::path("/Users/josephliotta/dev/sockets/build"));
     
-        auto rootp = ft.getRootPath();
+        fs::path rootp = ft.getRootPath();
 
         auto action = [rootp](shared_ptr<FileNode> node) {
             if (node->path == rootp) {
                 fs::path p(node->path);
                 cout << static_cast<string>(p.filename()) << endl;
             } else {
-                auto parent = node->getParent();
+                FileNode* parent = node->getParent();
                 string name;
                 while (parent->getParent() != nullptr) {
                     name = static_cast<string>(parent->path.filename()) + "/" + name;

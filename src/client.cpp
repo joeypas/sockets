@@ -5,12 +5,29 @@ using namespace std;
 
 int main() {
 
+    bool file = false;
+
     sock client([](int code, string message){
         cout << "Error: " << code << " : " << message << endl;
     });
 
-    client.onMessageReceived = [&client](string message){
-        cout << message << endl;
+    client.onMessageSent = [&file](string message){
+        if (message.substr(0,3) == "RET") file = true;
+    };
+
+    client.onMessageReceived = [&client, &file](string message){
+        if (!file) cout << message << endl;
+        else {
+            vector<char> compressed(0);
+            vector<char> decompressed(0);
+
+            buffer::add_buffer_to_vector(compressed, message.data(), message.size());
+            buffer::decompress_vector(compressed, decompressed);
+
+            cout << decompressed.data() << endl;
+            file = false;
+        }
+        
 
         if (message == "EXIT") {
             client.close();

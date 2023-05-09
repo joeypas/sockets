@@ -159,12 +159,15 @@ int main() {
                         file.read(&out_buf.front(), fileSize);
                     }
 
+                    vector<char> compressed(0);
+                    buffer::compress_vector(out_buf, compressed);
+
                     // send file in chunks
-                    if (out_buf.size() > buf_size) {
+                    if (compressed.size() > buf_size) {
                         int sent = 0;
-                        int left = strlen(out_buf.data());
-                        auto it = out_buf.begin();
-                        while (sent < strlen(out_buf.data())) {
+                        int left = compressed.size();
+                        auto it = compressed.begin();
+                        while (sent < compressed.size()) {
                             if (left < buf_size) break;
                             vector<char> tmp_buf(0);
                             tmp_buf.resize(buf_size);
@@ -179,13 +182,13 @@ int main() {
                         }
                         vector<char> tmp_buf(0);
                         tmp_buf.resize(left);
-                        for (int i = 0; it != out_buf.end(); i++) {
+                        for (int i = 0; it != compressed.end(); i++) {
                             tmp_buf[i] = *it;
                             it++;
                         }
                         s->sendall(tmp_buf.data(), left);
                     } else {
-                        s->sendall(out_buf.data(), strlen(out_buf.data()));
+                        s->sendall(compressed.data(), compressed.size());
                     }
                 }
                 file.close();
