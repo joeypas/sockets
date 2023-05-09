@@ -22,7 +22,7 @@ public:
     }
 
     static int compress_vector(std::vector<char> source, std::vector<char> &destination) {
-        unsigned long source_length = strlen(source.data());
+        unsigned long source_length = source.size();
         uLongf destination_length = compressBound(source_length);
 
         char *destination_data = (char *) malloc(destination_length);
@@ -32,7 +32,7 @@ public:
 
         Bytef *source_data = (Bytef *) source.data();
         int return_value = compress2((Bytef *) destination_data, &destination_length, source_data, source_length,
-                                    Z_BEST_COMPRESSION);
+                                    Z_BEST_SPEED);
         add_buffer_to_vector(destination, destination_data, destination_length);
         free(destination_data);
         return return_value;
@@ -40,7 +40,7 @@ public:
 
     static int decompress_vector(std::vector<char> source, std::vector<char> &destination) {
         unsigned long source_length = source.size();
-        uLongf destination_length = 0x1000;
+        uLongf destination_length = compressBound(source_length);
 
         char *destination_data = (char *) malloc(destination_length);
         if (destination_data == nullptr) {
@@ -49,6 +49,7 @@ public:
 
         Bytef *source_data = (Bytef *) source.data();
         int return_value = uncompress((Bytef *) destination_data, &destination_length, source_data, source.size());
+        std::cout << destination_data << std::endl;
         add_buffer_to_vector(destination, destination_data, destination_length);
         free(destination_data);
         return return_value;

@@ -22,10 +22,12 @@ public:
      * Callback for when socket recieves a message
     */
     std::function<void(std::string)> onMessageReceived;
+
+    std::function<void(std::vector<char>&)> onRawReceived;
     /**
      * Callback for when socket successfully sends a message
     */
-    std::function<void(char*, std::size_t)> onMessageSent;
+    std::function<void(std::string)> onMessageSent;
     /**
      * Callback for when socket closes 
     */
@@ -163,6 +165,10 @@ public:
             sent += n;
             bytes_left -= n;
         }
+
+        if (onMessageSent) {
+            onMessageSent(buffer);
+        }
     }
 
     /**
@@ -180,6 +186,11 @@ public:
             if (n == -1) { break; }
             sent += n;
             bytes_left -= n;
+        }
+
+        if (onMessageSent) {
+            std::string message(buffer, len);
+            onMessageSent(message);
         }
     }
 
@@ -226,7 +237,12 @@ protected:
                 if (!(recv(s->sockfd, buffer, buf_size, MSG_PEEK) >= 1)){
                     //int res = buffer::decompress_vector(compressed, decompressed);
                     std::string data(compressed.data(), total_len);
-                    s->onMessageReceived(data);
+                    if (s->onRawReceived)
+                        s->onRawReceived(compressed);
+                    
+                    if (s->onMessageReceived)
+                        s->onMessageReceived(data);
+
                     compressed = std::vector<char>(0);
                     total_len = 0;
                 }
