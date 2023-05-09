@@ -38,7 +38,7 @@ public:
     void bind(const char* host, uint16_t port, ON_ERR) {
         addr = new address_v4(0, port, host);
         addr->setAddr(onError);
-        addr->freeInfo();
+        //addr->freeInfo();
         if (::bind(sockfd, (const sockaddr*)&addr->address, sizeof(addr->address)) == -1) {
             onError(errno, "Bind error");
         } 
