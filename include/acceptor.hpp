@@ -28,6 +28,13 @@ public:
         this->backlog = backlog;
     }
 
+    /**
+     * Bind to specified host/port 
+     * 
+     * @param host string containing host IP address
+     * @param port port to bind to
+     * @param ON_ERR error callback
+    */
     void bind(const char* host, uint16_t port, ON_ERR) {
         addr = new address_v4(0, port, host);
         addr->setAddr(onError);
@@ -37,10 +44,20 @@ public:
         } 
     }
 
+    /**
+     * Start listening to socket
+     * 
+     * @return int status, -1 = error
+    */
     int listen() {
         return ::listen(sockfd, backlog);
     }
 
+    /**
+     * Accept incoming connection and create a new socket
+     * 
+     * @return socket file descriptor
+    */
     int accept() {
         sockaddr_in newInfo;
         socklen_t infoLength = sizeof(newInfo);
@@ -51,6 +68,11 @@ public:
         return fd;
     }
 
+    /**
+     * Start the accept loop on a new thread
+     * 
+     * @param ON_ERR error callback
+    */
     void beginEventLoop(ON_ERR) {
         if (listen() == -1){
             onError(errno, "Failed to listen to the socket");

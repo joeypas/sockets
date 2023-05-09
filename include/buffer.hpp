@@ -11,9 +11,19 @@
 #include <iomanip>
 #include <string>
 
-
+/**
+ * Utility class that aides with the managment and compression/decompression
+ * of character vectors.
+*/
 class buffer {
 public:
+    /**
+     * Inserts raw buffer to a vector
+     * 
+     * @param vector vector to add on to passed by ref
+     * @param buffer linked list of char pointers to add to vector 
+     * @param length size of buffer
+    */
     static void add_buffer_to_vector(std::vector<char> &vector, const char *buffer, uLongf length) {
         for (int character_index = 0; character_index < length; character_index++) {
             char current_character = buffer[character_index];
@@ -21,6 +31,13 @@ public:
         }
     }
 
+    /**
+     * Takes a source vector and compresses it, putting it in the destination vector
+     * 
+     * @param source vector of uncompressed data
+     * @param destination vector where compressed data will be copied
+     * @raturn int 0 on compelation
+    */
     static int compress_vector(std::vector<char> source, std::vector<char> &destination) {
         int ret, flush;
         unsigned int have;
@@ -61,6 +78,14 @@ public:
         return Z_OK;
     }
 
+    /**
+     * Takes a compressed vactor and decompresses it, copying the resulting data to a 
+     * destination vector
+     * 
+     * @param source vector of compressed data
+     * @param destination vector where decompressed data will be copied
+     * @return int 0 on compleation, not 0 on error
+    */
     static int decompress_vector(std::vector<char> source, std::vector<char> &destination) {
         int ret, flush;
         unsigned int have;
@@ -109,12 +134,18 @@ public:
         return Z_OK;
     }
 
-    static void add_string_to_vector(std::vector<char> &uncompressed_data,
-                            const std::string my_string) {
+    /**
+     * Inserts a std::string into given vector
+     * 
+     * @param vector vector to add string to passed by ref
+     * @param str string that will be appended to the vector
+    */
+    static void add_string_to_vector(std::vector<char> &vector,
+                            const std::string str) {
         int character_index = 0;
         while (true) {
-            char current_character = my_string[character_index];
-            uncompressed_data.push_back(current_character);
+            char current_character = str[character_index];
+            vector.push_back(current_character);
 
             if (current_character == '\00') {
                 break;

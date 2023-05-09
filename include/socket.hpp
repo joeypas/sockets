@@ -68,17 +68,21 @@ public:
 
     /**
      * Assign address to socket
+     * 
+     * @param ad sys primative representing address info
     */
-    void createAddr(sockaddr_in &a) {
+    void createAddr(sockaddr_in &ad) {
         char ipStr[INET_ADDRSTRLEN];
-        inet_ntop(AF_INET, &(a.sin_addr), ipStr, INET_ADDRSTRLEN);
+        inet_ntop(AF_INET, &(ad.sin_addr), ipStr, INET_ADDRSTRLEN);
         std::string ip(ipStr);
-        addr = new address_v4(0, (uint16_t)a.sin_port, ip.c_str());
+        addr = new address_v4(0, (uint16_t)ad.sin_port, ip.c_str());
         addr->freeInfo();
     }
 
     /**
      * Get pointer to address object
+     * 
+     * @return pointer to address object of socket
     */
     address_v4* getAddr() {
 
@@ -87,6 +91,11 @@ public:
 
     /**
      * Set socket to connect to endpoint, start new thread to send and recieve
+     * 
+     * @param host IP address to connect to 
+     * @param port port on host to connect to
+     * @param onConnected function callback on successfull connection
+     * @param ON_ERR function callback on error
     */
     void connect(const char* host, uint16_t port, std::function<void(address_v4*)> onConnected, ON_ERR) {
         addr = new address_v4(0, port, host);
@@ -122,6 +131,10 @@ public:
     
     /**
      * Send data on the socket once
+     * 
+     * @param buffer data to send
+     * @param len size of data
+     * @return size_t bytes sent
     */
     std::size_t send(char* buffer, size_t len) {
         size_t buf_size, bytes_sent;
@@ -136,18 +149,24 @@ public:
 
     /**
      * Receive data on the socket once
+     * 
+     * @param buffer container to recieve data into
+     * @param size max ammount of data to receive from socket
+     * @return size_t bytes received
     */
-    std::size_t receiveall(char* buffer, std::size_t s) {
+    std::size_t receive(char* buffer, std::size_t max_size) {
         size_t bytes_recived;
 
 
-        bytes_recived = recv(sockfd, buffer, s, 0);
+        bytes_recived = recv(sockfd, buffer, max_size, 0);
         
         return bytes_recived;
     }
 
     /**
      * Send data on socket until buffer is empty
+     * 
+     * @param buffer data to be sent
     */
     void sendall(std::string buffer)
     {
@@ -157,7 +176,6 @@ public:
         unsigned long bytes_left = buffer.size();
         unsigned long len = buffer.size();
 
-        //std::cout << len << std::endl;
 
         while (sent < len) {
             n = ::send(sockfd, buffer.data()+sent, bytes_left, 0);
@@ -173,6 +191,9 @@ public:
 
     /**
      * Overloaded send all for raw buffer
+     * 
+     * @param buffer data to be sent
+     * @param len size of data
     */
     void sendall(const char* buffer, std::size_t len)
     {
@@ -213,43 +234,50 @@ protected:
         std::size_t buf_size = s->getMaxSize();
         unsigned long len = 0;
 
-        std::vector<char> compressed(0);
+        std::vector<char> in_buf(0);
         int total_len = 0;
 
         
         while (len >= 0) {
             char* buffer = (char*)calloc(buf_size, sizeof(char));
             len = recv(s->sockfd, buffer, buf_size, 0);
+            // Remote socket closed
             if (len == 0) {
                 s->close();
                 s->del = true;
                 break;
-            } else if (len < 0) {
+            }
+            // Error 
+            else if (len < 0) {
                 onError(errno, "Failed to Recieve");
                 s->close();
                 s->del = true;
                 break;
-            } else {
-                buffer::add_buffer_to_vector(compressed, buffer, len);
+            }
+            // Data received 
+            else {
+                buffer::add_buffer_to_vector(in_buf, buffer, len);
                 total_len += len;
 
+                // Stop receive blocking to check for data
                 fcntl(s->sockfd, F_SETFL, O_NONBLOCK);
                 if (!(recv(s->sockfd, buffer, buf_size, MSG_PEEK) >= 1)){
-                    //int res = buffer::decompress_vector(compressed, decompressed);
-                    std::string data(compressed.data(), total_len);
+                    // No more data to rec run callback
+                    std::string data(in_buf.data(), total_len);
                     if (s->onRawReceived)
-                        s->onRawReceived(compressed);
+                        s->onRawReceived(in_buf);
                     
                     if (s->onMessageReceived)
                         s->onMessageReceived(data);
 
-                    compressed = std::vector<char>(0);
+                    in_buf = std::vector<char>(0);
                     total_len = 0;
                 }
                 fcntl(s->sockfd, F_SETFL, O_FSYNC);
             }
             free(buffer);
         }
+        // If we're done with the socket, delete it
         if (s->del && s != nullptr) {
             delete s;
         } else {
