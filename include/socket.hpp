@@ -47,6 +47,14 @@ public:
 
     }
 
+    void setMaxSize(int size) {
+        buf_size = size;
+    }
+
+    std::size_t getMaxSize() {
+        return buf_size;
+    }
+
     /**
      * Close the socket
     */
@@ -147,7 +155,7 @@ public:
         unsigned long bytes_left = buffer.size();
         unsigned long len = buffer.size();
 
-        std::cout << len << std::endl;
+        //std::cout << len << std::endl;
 
         while (sent < len) {
             n = ::send(sockfd, buffer.data()+sent, bytes_left, 0);
@@ -157,6 +165,9 @@ public:
         }
     }
 
+    /**
+     * Overloaded send all for raw buffer
+    */
     void sendall(const char* buffer, std::size_t len)
     {
         int sent = 0;
@@ -188,13 +199,7 @@ protected:
      * Wait for data to appear in socket, should be run in a new thread
     */
     static void createTask(sock* s, ON_ERR){
-        struct pollfd pfds[1];
-
-        pfds[0].fd = s->sockfd;
-        pfds[0].events = POLLIN;
-
-        
-                
+        std::size_t buf_size = s->getMaxSize();
         unsigned long len = 0;
 
         std::vector<char> compressed(0);
@@ -202,8 +207,8 @@ protected:
 
         
         while (len >= 0) {
-            char* buffer = (char*)calloc(0x1000, sizeof(char));
-            len = recv(s->sockfd, buffer, 0x1000, 0);
+            char* buffer = (char*)calloc(buf_size, sizeof(char));
+            len = recv(s->sockfd, buffer, buf_size, 0);
             if (len == 0) {
                 s->close();
                 s->del = true;
@@ -214,11 +219,11 @@ protected:
                 s->del = true;
                 break;
             } else {
-                buffer::add_string_to_vector(compressed, buffer);
+                buffer::add_buffer_to_vector(compressed, buffer, len);
                 total_len += len;
-                //int events = poll(pfds, 1, 1);
+
                 fcntl(s->sockfd, F_SETFL, O_NONBLOCK);
-                if (!(recv(s->sockfd, buffer, 0x1000, MSG_PEEK) >= 1)){
+                if (!(recv(s->sockfd, buffer, buf_size, MSG_PEEK) >= 1)){
                     //int res = buffer::decompress_vector(compressed, decompressed);
                     std::string data(compressed.data(), total_len);
                     s->onMessageReceived(data);
