@@ -18,9 +18,7 @@ int main() {
     assert(decompression_result == F_OK);
 
     printf("Uncompressed: %s\n", uncompressed.data());
-    printf("Compressed: ");
-    std::ostream &standard_output = std::cout;
-    buffer::print_bytes(standard_output, (const unsigned char *) compressed.data(), compressed.size(), false);
+
     printf("Decompressed: %s\n", decompressed.data());
 
     return 0;

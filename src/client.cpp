@@ -10,8 +10,7 @@ int main() {
     });
 
     client.onMessageReceived = [&client](string message){
-        cout << "Server => " << message << endl;
-        cout << message.size() << endl;
+        cout << "Server => "<< message << endl;
 
         if (message == "EXIT") {
             client.close();

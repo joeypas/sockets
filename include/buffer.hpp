@@ -68,17 +68,6 @@ public:
             character_index++;
         }
     }
-
-    static void print_bytes(std::ostream &stream, const unsigned char *data, size_t data_length, bool format = true) {
-        stream << std::setfill('0');
-        for (size_t data_index = 0; data_index < data_length; ++data_index) {
-            stream << std::hex << std::setw(2) << (int) data[data_index];
-            if (format) {
-                stream << (((data_index + 1) % 16 == 0) ? "\n" : " ");
-            }
-        }
-        stream << std::endl;
-    }
 };
 
 #endif

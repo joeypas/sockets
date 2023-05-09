@@ -143,22 +143,16 @@ public:
         int sent = 0;
         int n;
 
-        std::vector<char> uncompressed(0);
-        buffer::add_string_to_vector(uncompressed, buffer.data());
-
-        std::vector<char> compressed(0);
-        int compress_res = buffer::compress_vector(uncompressed, compressed);
-
-        unsigned long bytes_left = compressed.size();
-        unsigned long len = compressed.size();
+        unsigned long bytes_left = buffer.size();
+        unsigned long len = buffer.size();
 
 
 
         while (sent < len) {
-            if (bytes_left > 744){
-                n = ::send(sockfd, compressed.data()+sent, 744, 0);
+            if (bytes_left > buf_size){
+                n = ::send(sockfd, buffer.data()+sent, buf_size, 0);
             } else { 
-                n = ::send(sockfd, compressed.data()+sent, bytes_left, 0);
+                n = ::send(sockfd, buffer.data()+sent, bytes_left, 0);
             }
             if (n == -1) { break; }
             sent += n;
@@ -192,7 +186,6 @@ protected:
         unsigned long len = 0;
 
         std::vector<char> compressed(0);
-        std::vector<char> decompressed(0);
 
         
         while (len >= 0) {
@@ -211,11 +204,10 @@ protected:
                 buffer::add_string_to_vector(compressed, buffer);
                 int events = poll(pfds, 1, 1);
                 if (events == 0){
-                    int res = buffer::decompress_vector(compressed, decompressed);
-                    std::string data(decompressed.data(), decompressed.size());
+                    //int res = buffer::decompress_vector(compressed, decompressed);
+                    std::string data(compressed.data());
                     s->onMessageReceived(data);
                     compressed = std::vector<char>(0);
-                    decompressed = std::vector<char>(0);
                 }
             }
             free(buffer);
