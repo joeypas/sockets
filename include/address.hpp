@@ -42,7 +42,8 @@ public:
     }
 
     void freeInfo() {
-        freeaddrinfo(res);
+        if (res != nullptr)
+            freeaddrinfo(res);
     }
 
     addrinfo* getInfo(std::function<void(int, std::string)> onError) {

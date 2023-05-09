@@ -94,7 +94,10 @@ private:
         while (true) {
 
             s = e->accept();
-            if (s == -1) onError(errno, "Failed to accept connection");
+            if (s == -1){
+                 onError(errno, "Failed to accept connection");
+                 break;
+            }
 
             std::function<void(int, std::string)> errr = onError;
 
