@@ -3,6 +3,8 @@ Library built from ground up to help interface with sockets on UNIX systems. Non
 
 ## Build
 ```
+git clone --recursive https://github.com/joeypas/sockets.git
+cd sockets
 ./build.sh
 ```
 This will build the dependency, tests, and source files
