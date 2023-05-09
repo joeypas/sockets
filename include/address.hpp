@@ -11,7 +11,9 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 
-
+/**
+ * Represents an IPV4 address
+*/
 class address_v4 {
 public:
     sockaddr_in address;
