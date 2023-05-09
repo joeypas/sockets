@@ -8,6 +8,9 @@
 #include <vector>
 #include <functional>
 #include <thread>
+#include <cstdlib>
+#include <cstdio>
+#include <buffer.hpp>
 
 #define UNUSED(expr){ (void)(expr); }
 #define ON_ERR std::function<void(int, std::string)> onError = [](int err_code, std::string err_message){UNUSED(err_code); UNUSED(err_message)}
@@ -17,7 +20,7 @@ public:
     /**
      * Callback for when socket recieves a message
     */
-    std::function<void(char*, std::size_t)> onMessageReceived;
+    std::function<void(std::string)> onMessageReceived;
     /**
      * Callback for when socket successfully sends a message
     */
@@ -123,8 +126,9 @@ public:
     /**
      * Receive data on the socket once
     */
-    std::size_t receive(char* buffer, std::size_t s) {
+    std::size_t receiveall(char* buffer, std::size_t s) {
         size_t bytes_recived;
+
 
         bytes_recived = recv(sockfd, buffer, s, 0);
         
@@ -134,21 +138,32 @@ public:
     /**
      * Send data on socket until buffer is empty
     */
-    void sendall(char* buffer, size_t len)
+    void sendall(std::string buffer)
     {
         int sent = 0;
-        int bytes_left = len;
         int n;
 
-        while (sent < strlen(buffer)) {
-            n = ::send(sockfd, buffer+sent, bytes_left, 0);
+        std::vector<char> uncompressed(0);
+        buffer::add_string_to_vector(uncompressed, buffer.data());
+
+        std::vector<char> compressed(0);
+        int compress_res = buffer::compress_vector(uncompressed, compressed);
+
+        unsigned long bytes_left = compressed.size();
+        unsigned long len = compressed.size();
+
+
+
+        while (sent < len) {
+            if (bytes_left > 744){
+                n = ::send(sockfd, compressed.data()+sent, 744, 0);
+            } else { 
+                n = ::send(sockfd, compressed.data()+sent, bytes_left, 0);
+            }
             if (n == -1) { break; }
             sent += n;
             bytes_left -= n;
         }
-
-        if (onMessageSent)
-            onMessageSent(buffer, sent);
     }
 
     /**
@@ -167,12 +182,22 @@ protected:
      * Wait for data to appear in socket, should be run in a new thread
     */
     static void createTask(sock* s, ON_ERR){
-        char buffer[0x1000];
-        std::size_t len;
-        
-        len = recv(s->sockfd, buffer, 0x1000, 0);
+        struct pollfd pfds[1];
 
+        pfds[0].fd = s->sockfd;
+        pfds[0].events = POLLIN;
+
+        
+                
+        unsigned long len = 0;
+
+        std::vector<char> compressed(0);
+        std::vector<char> decompressed(0);
+
+        
         while (len >= 0) {
+            char* buffer = (char*)calloc(0x1000, sizeof(char));
+            len = recv(s->sockfd, buffer, 0x1000, 0);
             if (len == 0) {
                 s->close();
                 s->del = true;
@@ -183,14 +208,18 @@ protected:
                 s->del = true;
                 break;
             } else {
-                buffer[len] = '\0';
-                s->onMessageReceived(buffer, len);
-                len = recv(s->sockfd, buffer, 0x1000, 0);
+                buffer::add_string_to_vector(compressed, buffer);
+                int events = poll(pfds, 1, 1);
+                if (events == 0){
+                    int res = buffer::decompress_vector(compressed, decompressed);
+                    std::string data(decompressed.data(), decompressed.size());
+                    s->onMessageReceived(data);
+                    compressed = std::vector<char>(0);
+                    decompressed = std::vector<char>(0);
+                }
             }
+            free(buffer);
         }
-
-        //s->close();
-        //s->onSocketClosed(errno);
         if (s->del && s != nullptr) {
             delete s;
         } else {

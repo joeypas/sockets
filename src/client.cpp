@@ -9,10 +9,11 @@ int main() {
         cout << "Error: " << code << " : " << message << endl;
     });
 
-    client.onMessageReceived = [&client](char* message, int len){
+    client.onMessageReceived = [&client](string message){
         cout << "Server => " << message << endl;
+        cout << message.size() << endl;
 
-        if (string(message, len) == "EXIT") {
+        if (message == "EXIT") {
             client.close();
             exit(0);
         }
@@ -25,9 +26,9 @@ int main() {
     client.connect("127.0.0.1", 8888, [&client](address_v4* addr){
         cout << "Connected to: [" << addr->getAddrStr() << ":" << addr->getPort() << "]" << endl;
 
-        char* message = "Hello World!";
-        size_t len = strlen(message);
-        client.sendall(message, len);
+        std::string message = "Hello World!";
+        
+        client.sendall(message);
 
     },
     [](int code, string message){
@@ -37,7 +38,7 @@ int main() {
     string input;
     getline(cin, input);
     while (true) {
-        client.sendall((char*)input.c_str(), strlen(input.c_str()));
+        client.sendall(input);
         getline(cin, input);
     }
 
