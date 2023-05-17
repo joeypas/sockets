@@ -11,6 +11,7 @@
 #include <thread>
 #include <cppcoro/recursive_generator.hpp>
 #include <cppcoro/generator.hpp>
+#include <nvwa/debug_new.h>
 
 using namespace std;
 

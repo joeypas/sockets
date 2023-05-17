@@ -3,7 +3,7 @@
 
 int main() {
     try {
-        FileTree ft(fs::path("./"));
+        FileTree ft(fs::path("../"));
     
         fs::path rootp = ft.getRootPath();
 

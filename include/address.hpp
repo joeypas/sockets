@@ -74,7 +74,9 @@ public:
         }
         address.sin_family = AF_INET;
         address.sin_port = htons(port);
-        res = &hints;
+        if (res == nullptr) {
+            getInfo(onError);
+        }
     }
 
     std::string getAddrStr() {

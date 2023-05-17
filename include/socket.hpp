@@ -12,6 +12,7 @@
 #include <cstdlib>
 #include <cstdio>
 #include <buffer.hpp>
+#include <nvwa/debug_new.h>
 
 #define UNUSED(expr){ (void)(expr); }
 #define ON_ERR std::function<void(int, std::string)> onError = [](int err_code, std::string err_message){UNUSED(err_code); UNUSED(err_message)}
@@ -47,6 +48,11 @@ public:
         }
         buf_size = 0x1000;
 
+    }
+    ~sock() {
+        if (addr != nullptr) {
+            delete addr;
+        }
     }
 
     void setMaxSize(int size) {
@@ -239,10 +245,11 @@ protected:
 
         
         while (len >= 0) {
-            char* buffer = (char*)calloc(buf_size, sizeof(char));
+            char* buffer = new char[buf_size];
             len = recv(s->sockfd, buffer, buf_size, 0);
             // Remote socket closed
             if (len == 0) {
+                delete[] buffer;
                 s->close();
                 s->del = true;
                 break;
@@ -250,6 +257,7 @@ protected:
             // Error 
             else if (len < 0) {
                 onError(errno, "Failed to Recieve");
+                delete[] buffer;
                 s->close();
                 s->del = true;
                 break;
@@ -274,8 +282,8 @@ protected:
                     total_len = 0;
                 }
                 fcntl(s->sockfd, F_SETFL, O_FSYNC);
+                delete[] buffer;
             }
-            free(buffer);
         }
         // If we're done with the socket, delete it
         if (s->del && s != nullptr) {

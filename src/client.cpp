@@ -31,6 +31,7 @@ int main() {
 
         if (message == "EXIT") {
             client.close();
+            client.~sock();
             exit(0);
         }
     };
