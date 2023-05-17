@@ -12,7 +12,6 @@
 #include <cstdlib>
 #include <cstdio>
 #include <buffer.hpp>
-#include <nvwa/debug_new.h>
 
 #define UNUSED(expr){ (void)(expr); }
 #define ON_ERR std::function<void(int, std::string)> onError = [](int err_code, std::string err_message){UNUSED(err_code); UNUSED(err_message)}
