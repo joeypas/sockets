@@ -3,3 +3,5 @@ build
 .clangd
 lib
 include/cppcoro
+include/snappy
+share

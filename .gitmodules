@@ -1,3 +1,6 @@
 [submodule "cppcoro"]
 	path = cppcoro
 	url = https://github.com/andreasbuhr/cppcoro.git
+[submodule "snappy"]
+	path = snappy
+	url = https://github.com/google/snappy.git
