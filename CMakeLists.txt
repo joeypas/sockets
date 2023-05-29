@@ -12,16 +12,16 @@ find_package(ZLIB REQUIRED)
 add_executable(test_tree
     tests/tree_test.cpp)
 target_compile_options(test_tree PUBLIC "-g" "-O3")
-target_link_libraries(test_tree PUBLIC tcmalloc c++)
+target_link_libraries(test_tree PUBLIC tcmalloc)
 
 add_executable(server_test
     src/server.cpp)
 target_compile_options(server_test PUBLIC "-g" "-pthread" "-mtune=native" "-O3")
-target_link_libraries(server_test "${CMAKE_THREAD_LIBS_INIT}" ZLIB::ZLIB c++)
+target_link_libraries(server_test "${CMAKE_THREAD_LIBS_INIT}" ZLIB::ZLIB)
 add_executable(client_test
     src/client.cpp)
 target_compile_options(client_test PUBLIC "-pthread" "-mtune=native" "-O3")
-target_link_libraries(client_test "${CMAKE_THREAD_LIBS_INIT}" ZLIB::ZLIB c++)
+target_link_libraries(client_test "${CMAKE_THREAD_LIBS_INIT}" ZLIB::ZLIB)
 
 add_executable(buffer_test
     tests/buffer_test.cpp)
