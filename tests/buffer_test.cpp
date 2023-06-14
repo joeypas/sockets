@@ -1,6 +1,7 @@
 #include <vector>
 #include <string>
 #include <fstream>
+#include <cstring>
 #include <buffer.hpp>
 
 using namespace std;
