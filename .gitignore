@@ -1,3 +1,4 @@
+.DS_Store
 build
 .vscode
 .clangd
@@ -5,3 +6,7 @@ lib
 include/cppcoro
 include/snappy
 share
+include/benchmark
+include/gmock
+include/gtest
+include/snappy*

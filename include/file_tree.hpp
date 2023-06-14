@@ -11,6 +11,7 @@
 #include <thread>
 #include <cppcoro/recursive_generator.hpp>
 #include <cppcoro/generator.hpp>
+#include <cppcoro/task.hpp>
 
 using namespace std;
 
@@ -108,10 +109,11 @@ public:
      * 
      * @param action void func(FileNode*) takes pointer and performs action with it
     */
-    void fileAction(function<void(shared_ptr<FileNode>)> action) {
+    cppcoro::task<> fileAction(function<void(shared_ptr<FileNode>)> action) {
         for (auto &f : getNodes(root)) {
             action(f);
         }
+        co_return;
     }
 
     /**

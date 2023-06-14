@@ -6,6 +6,7 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <cppcoro/sync_wait.hpp>
 
 using namespace std;
 
@@ -98,7 +99,7 @@ int main() {
                     }
                 };
 
-                ft.fileAction(action);
+                cppcoro::sync_wait(ft.fileAction(action));
 
                 // move contents from stringstream to vector
                 vector<string> st(0);
