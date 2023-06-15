@@ -1,5 +1,6 @@
 #include <address.hpp>
 #include <socket.hpp>
+#include <snappy.h>
 
 using namespace std;
 
@@ -18,13 +19,13 @@ int main() {
     client.onMessageReceived = [&client, &file](string message){
         if (!file) cout << message << endl;
         else {
-            vector<char> compressed(0);
-            vector<char> decompressed(0);
+            string decompressed;
 
-            buffer::add_buffer_to_vector(compressed, message.data(), message.size());
-            buffer::decompress_vector(compressed, decompressed);
+            //buffer::add_buffer_to_vector(compressed, message.data(), message.size());
+            //buffer::decompress_vector(compressed, decompressed);
+            snappy::Uncompress(message.data(), message.size(), &decompressed);
 
-            cout << decompressed.data() << endl;
+            cout << decompressed << endl;
             file = false;
         }
         

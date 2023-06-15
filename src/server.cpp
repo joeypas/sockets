@@ -7,6 +7,7 @@
 #include <sstream>
 #include <iostream>
 #include <cppcoro/sync_wait.hpp>
+#include <snappy.h>
 
 using namespace std;
 
@@ -160,8 +161,9 @@ int main() {
                         file.read(&out_buf.front(), fileSize);
                     }
 
-                    vector<char> compressed(0);
-                    buffer::compress_vector(out_buf, compressed);
+                    string compressed;
+                    //buffer::compress_vector(out_buf, compressed);
+                    snappy::Compress(out_buf.data(), out_buf.size(), &compressed);
 
                     // send file in chunks
                     if (compressed.size() > buf_size) {

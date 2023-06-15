@@ -12,17 +12,18 @@ find_package(ZLIB REQUIRED)
 add_executable(test_tree
     tests/tree_test.cpp)
 target_compile_options(test_tree PUBLIC "-g" "-pthread" "-O3")
-target_link_libraries(test_tree PUBLIC cppcoro tcmalloc c++)
+target_link_libraries(test_tree PUBLIC cppcoro tcmalloc)
 
 add_executable(server_test
     src/server.cpp)
 target_compile_options(server_test PUBLIC "-g" "-pthread" "-mtune=native" "-O3")
-target_link_libraries(server_test "${CMAKE_THREAD_LIBS_INIT}" cppcoro ZLIB::ZLIB)
+target_link_libraries(server_test "${CMAKE_THREAD_LIBS_INIT}" cppcoro ZLIB::ZLIB snappy)
 add_executable(client_test
     src/client.cpp)
-target_compile_options(client_test PUBLIC "-pthread" "-mtune=native" "-O3")
-target_link_libraries(client_test "${CMAKE_THREAD_LIBS_INIT}" ZLIB::ZLIB)
+target_compile_options(client_test PUBLIC "-g" "-pthread" "-mtune=native" "-O3")
+target_link_libraries(client_test "${CMAKE_THREAD_LIBS_INIT}" ZLIB::ZLIB snappy)
 
 add_executable(buffer_test
     tests/buffer_test.cpp)
-target_link_libraries(buffer_test ZLIB::ZLIB)
+target_compile_options(buffer_test PUBLIC "-g" "-mtune=native" "-O3")
+target_link_libraries(buffer_test ZLIB::ZLIB snappy)
