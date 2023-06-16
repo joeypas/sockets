@@ -7,6 +7,8 @@
 #include <netdb.h>
 #include <memory>
 #include <string>
+#include <cstring>
+#include <functional>
 #include <iostream>
 #include <unistd.h>
 #include <arpa/inet.h>

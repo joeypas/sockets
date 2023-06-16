@@ -1,5 +1,6 @@
 #include "file_tree.hpp"
 #include <iostream>
+#include <cppcoro/sync_wait.hpp>
 
 int main() {
     try {
@@ -23,7 +24,7 @@ int main() {
             }
         };
 
-        ft.fileAction(action);
+        cppcoro::sync_wait(ft.fileAction(action));
     }
     catch (const std::exception &e) {
         cerr << e.what() << endl;
