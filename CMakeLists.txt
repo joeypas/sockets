@@ -12,7 +12,7 @@ find_package(ZLIB REQUIRED)
 add_executable(test_tree
     tests/tree_test.cpp)
 target_compile_options(test_tree PUBLIC "-g" "-pthread" "-O3")
-target_link_libraries(test_tree PUBLIC cppcoro tcmalloc)
+target_link_libraries(test_tree PUBLIC cppcoro)
 
 add_executable(server_test
     src/server.cpp)
