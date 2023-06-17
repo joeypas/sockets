@@ -8,11 +8,12 @@
 #include <iostream>
 #include <cppcoro/sync_wait.hpp>
 #include <snappy.h>
+#include <mutex>
 
 using namespace std;
 
 int main() {
-
+    mutex m;
     // Get the current directory when the program starts
     char* cwd = new char[FILENAME_MAX];
     getcwd(cwd, FILENAME_MAX);
@@ -26,7 +27,7 @@ int main() {
     });
 
     // Set the callback function for when new connection is accepted passes socket that was created
-    server.onNewConnection = [&workingDIR](sock* s) {
+    server.onNewConnection = [&workingDIR, &m](sock* s) {
         size_t buf_size = s->getMaxSize();
         auto addr = s->getAddr();
         string addrStr(addr->getAddrStr());
@@ -34,7 +35,8 @@ int main() {
         cout << "New connection: " << addr->getAddrStr() << ":" << addr->getPort() << endl;
 
         // Callback for when server receives message on new socket if command is sent execute that command
-        s->onMessageReceived = [s, addrStr, &workingDIR, buf_size](string message) {
+        s->onMessageReceived = [s, addrStr, &workingDIR, buf_size, &m](string message) {
+            m.lock();
             cout << "[" << addrStr << "]: " << message << endl;
             string ret;
             // Close the socket 
@@ -201,6 +203,7 @@ int main() {
                 ret.shrink_to_fit();
                 s->sendall(ret);
             }
+            m.unlock();
         };
 
         // Callback for when remote socket closes

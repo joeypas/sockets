@@ -1,11 +1,12 @@
 #include <address.hpp>
 #include <socket.hpp>
 #include <snappy.h>
+#include <mutex>
 
 using namespace std;
 
 int main() {
-
+    mutex m;
     bool file = false;
 
     sock client([](int code, string message){
@@ -16,7 +17,8 @@ int main() {
         if (message.substr(0,3) == "RET") file = true;
     };
 
-    client.onMessageReceived = [&client, &file](string message){
+    client.onMessageReceived = [&client, &file, &m](string message){
+        m.lock();
         if (!file) cout << message << endl;
         else {
             string decompressed;
@@ -35,6 +37,7 @@ int main() {
             client.~sock();
             exit(0);
         }
+        m.unlock();
     };
 
     client.onSocketClosed = [](int code){
