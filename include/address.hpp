@@ -48,14 +48,12 @@ public:
             freeaddrinfo(res);
     }
 
-    addrinfo* getInfo(std::function<void(int, std::string)> onError) {
-        //char p[12];
-        //snprintf(p, sizeof(port), "%d", port);
+    addrinfo* getInfo(std::function<void(int, std::string)> const &onError) {
 
         if (addr.empty()) {
-            int s = getaddrinfo(NULL, NULL, &hints, &res);
+            int s = getaddrinfo(nullptr, nullptr, &hints, &res);
         } else {
-            int s = getaddrinfo(addr.c_str(), NULL, &hints, &res);
+            int s = getaddrinfo(addr.c_str(), nullptr, &hints, &res);
         }
         
         if (s != 0){
@@ -65,7 +63,7 @@ public:
         return res;
     }
 
-    void setAddr(std::function<void(int, std::string)> onError) {
+    void setAddr(std::function<void(int, std::string)> const &onError) {
         int e = inet_pton(hints.ai_family, addr.c_str(), &address.sin_addr);
         if (e == -1) {
             onError(errno, "Invalid Host");
@@ -81,11 +79,11 @@ public:
         }
     }
 
-    std::string getAddrStr() {
+    std::string getAddrStr() const {
         return addr;
     }
 
-    int getPort() {
+    int getPort() const {
         return port;
     }
 

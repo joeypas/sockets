@@ -21,11 +21,10 @@ public:
     struct remote_sock rs;
 
 
-    acceptor(ON_ERR, int backlog = 20) : sock(onError) {
+    acceptor(ON_ERR, int backlog = 20) : sock(onError), backlog(backlog) {
         int opt = 1;
         setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(int));
         setsockopt(sockfd, SOL_SOCKET, SO_REUSEPORT, &opt, sizeof(int));
-        this->backlog = backlog;
     }
 
     /**
@@ -49,7 +48,7 @@ public:
      * 
      * @return int status, -1 = error
     */
-    int listen() {
+    int listen() const {
         return ::listen(sockfd, backlog);
     }
 

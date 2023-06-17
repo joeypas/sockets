@@ -23,8 +23,6 @@ int main() {
         else {
             string decompressed;
 
-            //buffer::add_buffer_to_vector(compressed, message.data(), message.size());
-            //buffer::decompress_vector(compressed, decompressed);
             snappy::Uncompress(message.data(), message.size(), &decompressed);
 
             cout << decompressed << endl;

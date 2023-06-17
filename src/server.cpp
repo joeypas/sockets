@@ -15,7 +15,7 @@ using namespace std;
 int main() {
     mutex m;
     // Get the current directory when the program starts
-    char* cwd = new char[FILENAME_MAX];
+    auto* cwd = new char[FILENAME_MAX];
     getcwd(cwd, FILENAME_MAX);
 
     string workingDIR(cwd);
@@ -53,9 +53,9 @@ int main() {
             }
 
             // Change working directory
-            else if(message.substr(0, 2) == "CD") {
+            else if(message.starts_with("CD")) {
                 // If directory = .. move up a directory
-                if (message.substr(3, message.size()) == ".."){
+                if (message.ends_with("..")){
                     for (auto it = workingDIR.end(); it != workingDIR.begin(); it--) {
                         if (*it == '/') {
                             workingDIR.erase(it, workingDIR.end());
@@ -141,7 +141,7 @@ int main() {
             }
 
             // Send a file
-            else if (message.substr(0,3) == "RET") {
+            else if (message.starts_with("RET")) {
                 string filename = workingDIR + "/" + message.substr(4,message.size());
                 cout << filename << endl;
 
@@ -164,7 +164,6 @@ int main() {
                     }
 
                     string compressed;
-                    //buffer::compress_vector(out_buf, compressed);
                     snappy::Compress(out_buf.data(), out_buf.size(), &compressed);
 
                     // send file in chunks

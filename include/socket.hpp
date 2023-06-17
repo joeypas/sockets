@@ -58,14 +58,14 @@ public:
         buf_size = size;
     }
 
-    std::size_t getMaxSize() {
+    std::size_t getMaxSize() const {
         return buf_size;
     }
 
     /**
      * Close the socket
     */
-    void close() {
+    void close() const {
         ::close(sockfd);
         if (onSocketClosed)
             onSocketClosed(errno);
@@ -76,7 +76,7 @@ public:
      * 
      * @param ad sys primative representing address info
     */
-    void createAddr(sockaddr_in &ad) {
+    void createAddr(sockaddr_in const &ad) {
         char ipStr[INET_ADDRSTRLEN];
         inet_ntop(AF_INET, &(ad.sin_addr), ipStr, INET_ADDRSTRLEN);
         std::string ip(ipStr);
@@ -102,11 +102,11 @@ public:
      * @param onConnected function callback on successfull connection
      * @param ON_ERR function callback on error
     */
-    void connect(const char* host, uint16_t port, std::function<void(address_v4*)> onConnected, ON_ERR) {
+    void connect(const char* host, uint16_t port, std::function<void(address_v4*)> const& onConnected, ON_ERR) {
         addr = new address_v4(0, port, host);
         auto info = addr->getInfo(onError);
 
-        for (p = info; p != NULL; p = p->ai_next) {
+        for (p = info; p != nullptr; p = p->ai_next) {
             if (p->ai_family == AF_INET) {
                 memcpy((void *)&(addr->address), (void*)p->ai_addr, sizeof(sockaddr_in));
                 break;
@@ -114,7 +114,7 @@ public:
         }
         addr->freeInfo();
 
-        uint32_t ip = (uint32_t)addr->address.sin_addr.s_addr;
+        auto ip = (uint32_t)addr->address.sin_addr.s_addr;
 
         addr->address.sin_family = AF_INET;
         addr->address.sin_port = htons(port);
@@ -141,12 +141,10 @@ public:
      * @param len size of data
      * @return size_t bytes sent
     */
-    std::size_t send(char* buffer, size_t len) {
-        size_t buf_size, bytes_sent;
+    std::size_t send(char* buffer, size_t len) const {
+        size_t bytes_sent;
         
-        buf_size = len;
-        
-        bytes_sent = ::send(sockfd, buffer, buf_size, 0);
+        bytes_sent = ::send(sockfd, buffer, len, 0);
 
         
         return bytes_sent;
@@ -159,7 +157,7 @@ public:
      * @param size max ammount of data to receive from socket
      * @return size_t bytes received
     */
-    std::size_t receive(char* buffer, std::size_t max_size) {
+    std::size_t receive(char* buffer, std::size_t max_size) const {
         size_t bytes_recived;
 
 
@@ -173,7 +171,7 @@ public:
      * 
      * @param buffer data to be sent
     */
-    void sendall(std::string buffer)
+    void sendall(std::string buffer) const
     {
         int sent = 0;
         int n;
@@ -200,7 +198,7 @@ public:
      * @param buffer data to be sent
      * @param len size of data
     */
-    void sendall(const char* buffer, std::size_t len)
+    void sendall(const char* buffer, std::size_t len) const
     {
         int sent = 0;
         int n;
@@ -223,8 +221,8 @@ public:
     /**
      * Create a new thread to send and receive on 
     */
-    void spawnTask(bool del = false, ON_ERR) {
-        this->del = del;
+    void spawnTask(bool dele = false, ON_ERR) {
+        this->del = dele;
         std::thread t(createTask, std::move(this), onError);
         t.detach();
     }
@@ -237,14 +235,14 @@ protected:
     */
     static void createTask(sock* s, ON_ERR){
         std::size_t buf_size = s->getMaxSize();
-        unsigned long len = 0;
+        long len = 0;
 
         std::vector<char> in_buf(0);
         int total_len = 0;
 
         
         while (len >= 0) {
-            char* buffer = new char[buf_size];
+            auto* buffer = new char[buf_size];
             len = recv(s->sockfd, buffer, buf_size, 0);
             // Remote socket closed
             if (len == 0) {
