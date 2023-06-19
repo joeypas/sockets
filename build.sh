@@ -4,7 +4,7 @@ mkdir cppcoro/build && cd cppcoro/build
 
 cmake -DCMAKE_INSTALL_PREFIX="../../" ..
 
-make install
+make install -j
 
 cd ../../
 
@@ -16,7 +16,7 @@ cd build
 
 cmake -DCMAKE_INSTALL_PREFIX="../../" ..
 
-make install
+make install -j
 
 cd ../../
 
@@ -24,4 +24,4 @@ mkdir build && cd build
 
 cmake ..
 
-make
+make -j

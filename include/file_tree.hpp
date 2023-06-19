@@ -27,8 +27,11 @@ struct FileNode {
     vector<shared_ptr<FileNode>> children;
     fs::path path;
 
-    FileNode() : has_children(false) {}
-    FileNode(fs::path p) : path(p), parent(nullptr) {
+    FileNode() {
+        parent = nullptr;
+        has_children = false;
+    }
+    explicit FileNode(fs::path p) : parent(nullptr), path(p) {
         if (fs::is_directory(path)) {
             has_children = true;
             thread t(getChildren, this);
@@ -37,7 +40,7 @@ struct FileNode {
             has_children = false;
         }
     }
-    FileNode(fs::path p, FileNode* parent) : path(p), parent(parent) {
+    FileNode(fs::path p, FileNode* parent) : parent(parent), path(p) {
         if (fs::is_directory(path)) {
             has_children = true;
             thread t(getChildren, this);
@@ -49,7 +52,7 @@ struct FileNode {
 
     // Finds children and constructs nodes from them
     static void getChildren(FileNode* node) {
-        for (auto const dir_entry : fs::directory_iterator(node->path)) {
+        for (auto const& dir_entry : fs::directory_iterator(node->path)) {
             node->children.push_back(make_shared<FileNode>(dir_entry, node));
         }
     }
@@ -60,7 +63,7 @@ struct FileNode {
         return p;
     }
 
-    fs::path getParentPath() {
+    fs::path getParentPath() const {
         return parent->path;
     }
 
@@ -80,7 +83,7 @@ private:
      * to provide an iterator like pointer after each co_yeild is called.
      * Private function so we can properly handle iterators.
     */
-    cppcoro::generator<shared_ptr<FileNode>> getNodes(shared_ptr<FileNode> &parent) {
+    cppcoro::generator<shared_ptr<FileNode>> getNodes(shared_ptr<FileNode> const parent) const {
         stack<shared_ptr<FileNode>> stack_;
         stack_.push(parent);
         while (!stack_.empty()) {
@@ -90,7 +93,7 @@ private:
             if (!node->has_children) {
                 co_yield node;
             } else {
-                for (auto &child : node->children) {
+                for (auto const &child : node->children) {
                     stack_.push(child);
                 }
             }
@@ -98,7 +101,7 @@ private:
     }
 
 public:
-    FileTree(fs::path base_file) {
+    explicit FileTree(fs::path base_file) {
         root = make_shared<FileNode>(base_file);
     }
 
@@ -110,7 +113,7 @@ public:
      * @param action void func(FileNode*) takes pointer and performs action with it
     */
     cppcoro::task<> fileAction(function<void(shared_ptr<FileNode>)> action) {
-        for (auto &f : getNodes(root)) {
+        for (auto const &f : getNodes(root)) {
             action(f);
         }
         co_return;
@@ -121,7 +124,7 @@ public:
      * 
      * @return FileNode* root
      */
-    fs::path getRootPath() {
+    fs::path getRootPath() const {
         return root->path;
     }
 

@@ -8,13 +8,14 @@
 #include <iostream>
 #include <cppcoro/sync_wait.hpp>
 #include <snappy.h>
+#include <mutex>
 
 using namespace std;
 
 int main() {
-
+    mutex m;
     // Get the current directory when the program starts
-    char* cwd = new char[FILENAME_MAX];
+    auto* cwd = new char[FILENAME_MAX];
     getcwd(cwd, FILENAME_MAX);
 
     string workingDIR(cwd);
@@ -26,7 +27,7 @@ int main() {
     });
 
     // Set the callback function for when new connection is accepted passes socket that was created
-    server.onNewConnection = [&workingDIR](sock* s) {
+    server.onNewConnection = [&workingDIR, &m](sock* s) {
         size_t buf_size = s->getMaxSize();
         auto addr = s->getAddr();
         string addrStr(addr->getAddrStr());
@@ -34,7 +35,8 @@ int main() {
         cout << "New connection: " << addr->getAddrStr() << ":" << addr->getPort() << endl;
 
         // Callback for when server receives message on new socket if command is sent execute that command
-        s->onMessageReceived = [s, addrStr, &workingDIR, buf_size](string message) {
+        s->onMessageReceived = [s, addrStr, &workingDIR, buf_size, &m](string message) {
+            m.lock();
             cout << "[" << addrStr << "]: " << message << endl;
             string ret;
             // Close the socket 
@@ -51,9 +53,9 @@ int main() {
             }
 
             // Change working directory
-            else if(message.substr(0, 2) == "CD") {
+            else if(message.starts_with("CD")) {
                 // If directory = .. move up a directory
-                if (message.substr(3, message.size()) == ".."){
+                if (message.ends_with("..")){
                     for (auto it = workingDIR.end(); it != workingDIR.begin(); it--) {
                         if (*it == '/') {
                             workingDIR.erase(it, workingDIR.end());
@@ -139,7 +141,7 @@ int main() {
             }
 
             // Send a file
-            else if (message.substr(0,3) == "RET") {
+            else if (message.starts_with("RET")) {
                 string filename = workingDIR + "/" + message.substr(4,message.size());
                 cout << filename << endl;
 
@@ -162,7 +164,6 @@ int main() {
                     }
 
                     string compressed;
-                    //buffer::compress_vector(out_buf, compressed);
                     snappy::Compress(out_buf.data(), out_buf.size(), &compressed);
 
                     // send file in chunks
@@ -201,6 +202,7 @@ int main() {
                 ret.shrink_to_fit();
                 s->sendall(ret);
             }
+            m.unlock();
         };
 
         // Callback for when remote socket closes
