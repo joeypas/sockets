@@ -27,6 +27,14 @@ public:
         setsockopt(sockfd, SOL_SOCKET, SO_REUSEPORT, &opt, sizeof(int));
     }
 
+    /** 
+     * Move Constructor
+    */
+    acceptor(acceptor&& other) noexcept : sock((sock&&) other), backlog(std::move(other.backlog)), onNewConnection(std::move(other.onNewConnection)) {
+        other.sockfd = -1;
+        other.addr = nullptr;
+    }
+
     /**
      * Bind to specified host/port 
      * 

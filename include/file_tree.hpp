@@ -34,7 +34,7 @@ struct FileNode {
     explicit FileNode(fs::path p) : parent(nullptr), path(p) {
         if (fs::is_directory(path)) {
             has_children = true;
-            thread t(getChildren, this);
+            thread t(getChildren, std::move(this));
             t.join();
         } else if (!fs::is_empty(path)) {
             has_children = false;
@@ -48,6 +48,13 @@ struct FileNode {
         } else if (!fs::is_empty(path)) {
             has_children = false;
         }
+    }
+
+    FileNode(FileNode&& other) noexcept : parent(std::move(other.parent)), has_children(std::move(other.has_children)), children(std::move(other.children)), path(std::move(other.path)) {
+        other.parent = nullptr;
+        other.has_children = false;
+        other.children.clear();
+        other.path = "";
     }
 
     // Finds children and constructs nodes from them

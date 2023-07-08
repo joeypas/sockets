@@ -48,6 +48,13 @@ public:
         buf_size = 0x1000;
 
     }
+
+    sock(sock&& other) noexcept : sockfd(std::move(other.sockfd)), buf_size(std::move(other.buf_size)), addr(std::move(other.addr)), onMessageReceived(std::move(other.onMessageReceived)), onMessageSent(std::move(other.onMessageSent)), onSocketClosed(std::move(other.onSocketClosed)) {
+        other.sockfd = -1;
+        other.addr = nullptr;
+        
+    }
+
     ~sock() {
         if (addr != nullptr) {
             delete addr;
