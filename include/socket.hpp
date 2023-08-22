@@ -49,6 +49,12 @@ public:
 
     }
 
+    virtual ~sock() {
+        this->del = true;
+        close();
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    }
+
 
     void setMaxSize(int size) {
         buf_size = size;
@@ -90,6 +96,7 @@ public:
 
     /**
      * Set socket to connect to endpoint, start new thread to send and recieve
+     * TODO: THIS IS CAUSING A MEM LEAK
      * 
      * @param host IP address to connect to 
      * @param port port on host to connect to
@@ -236,21 +243,16 @@ protected:
         std::vector<char> in_buf(0);
         int total_len = 0;
         
-        while (len >= 0) {
+        while (len >= 0 && s->del == false) {
             auto* buffer = new char[buf_size];
             if (!(recv(s->sockfd, buffer, buf_size, MSG_PEEK) >= 1)) {
-                s->close();
-                s->del = true;
-                delete[] buffer;
-                break;
+                fcntl(s->sockfd, F_SETFL, O_NONBLOCK);
             }
             len = recv(s->sockfd, buffer, buf_size, 0);
             // Remote socket closed
             if (len == 0) {
                 s->close();
                 s->del = true;
-                delete[] buffer;
-                break;
             }
             // Error 
             else if (len < 0) {
@@ -279,8 +281,11 @@ protected:
                 }
                 fcntl(s->sockfd, F_SETFL, O_SYNC);
             }
+            fcntl(s->sockfd, F_SETFL, O_SYNC);
             delete[] buffer;
         }
+
+        std::cout << "HERE" << std::endl;
 
        /*If we're done with the socket, delete it
         if (!(s->del) && s != nullptr) {
