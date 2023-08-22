@@ -50,11 +50,11 @@ public:
     }
 
     addrinfo* getInfo(std::function<void(int, std::string)> const &onError) {
-
+        int s;
         if (addr.empty()) {
-            int s = getaddrinfo(nullptr, nullptr, &hints, &res);
+            s = getaddrinfo(nullptr, nullptr, &hints, &res);
         } else {
-            int s = getaddrinfo(addr.c_str(), nullptr, &hints, &res);
+            s = getaddrinfo(addr.c_str(), nullptr, &hints, &res);
         }
         
         if (s != 0){
