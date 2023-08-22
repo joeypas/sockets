@@ -27,10 +27,13 @@ public:
         setsockopt(sockfd, SOL_SOCKET, SO_REUSEPORT, &opt, sizeof(int));
     }
 
+    /**
+     * Destructor
+    */
     ~acceptor() {
-        if (task.joinable())
-            task.join();
+        task.join();
     }
+
     /**
      * Bind to specified host/port 
      * 
@@ -81,7 +84,7 @@ public:
             onError(errno, "Failed to listen to the socket");
             return;
         }
-        task = std::move(std::thread{eventLoop, this, onError});
+        task = std::thread{&eventLoop, this, onError};
     }
 
 private:
@@ -92,7 +95,8 @@ private:
     */
     static void eventLoop(acceptor* e, ON_ERR) {
         int s = -1;
-        sock* newsock;
+        std::vector<std::unique_ptr<sock>> sockets;
+        std::vector<std::thread> tasks;
         while (true) {
 
             s = e->accept();
@@ -103,13 +107,22 @@ private:
 
             std::function<void(int, std::string)> errr = onError;
 
-            newsock = new sock(errr, s);
+            sockets.push_back(std::make_unique<sock>(errr, s));
 
-            newsock->createAddr(e->rs.remote_addr);
+            sockets.back()->createAddr(e->rs.remote_addr);
 
-            e->onNewConnection(newsock);
-            newsock->spawnTask(false, onError);
+            e->onNewConnection(sockets.back().get());
+
+            tasks.push_back(std::thread{&createTask, sockets.back().get(), onError});
         }
+        for (auto& sock : sockets) {
+            sock->close();
+        }
+
+        for (auto& task : tasks) {
+            task.join();
+        }
+
         e->close();
     }
 

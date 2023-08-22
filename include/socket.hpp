@@ -49,9 +49,6 @@ public:
 
     }
 
-    /**
-     * Destructor
-    */
 
     void setMaxSize(int size) {
         buf_size = size;
@@ -218,12 +215,13 @@ public:
    
     /**
      * Create a new thread to send and receive on 
-    */
+    
     void spawnTask(bool dele = false, ON_ERR) {
         this->del = dele;
         task = std::thread{createTask, this, onError};
         task.detach();
     }
+    */
 
     bool del = false;
 
@@ -237,15 +235,21 @@ protected:
 
         std::vector<char> in_buf(0);
         int total_len = 0;
-
         
         while (len >= 0) {
             auto* buffer = new char[buf_size];
+            if (!(recv(s->sockfd, buffer, buf_size, MSG_PEEK) >= 1)) {
+                s->close();
+                s->del = true;
+                delete[] buffer;
+                break;
+            }
             len = recv(s->sockfd, buffer, buf_size, 0);
             // Remote socket closed
             if (len == 0) {
                 s->close();
                 s->del = true;
+                delete[] buffer;
                 break;
             }
             // Error 
@@ -261,7 +265,7 @@ protected:
 
                 // Stop receive blocking to check for data
                 fcntl(s->sockfd, F_SETFL, O_NONBLOCK);
-                if (len = !(recv(s->sockfd, buffer, buf_size, MSG_PEEK) >= 1)){
+                if (!(len = recv(s->sockfd, buffer, buf_size, MSG_PEEK) >= 1)){
                     // No more data to rec run callback
                     std::string data(in_buf.data(), total_len);
                     if (s->onRawReceived)
@@ -278,21 +282,18 @@ protected:
             delete[] buffer;
         }
 
-        // If we're done with the socket, delete it
+       /*If we're done with the socket, delete it
         if (!(s->del) && s != nullptr) {
             createTask(s);
-        } else {
+        }  else {d
             delete s;
-        }
+        } */
     }
 
     int sockfd;
     std::unique_ptr<address_v4> addr;
     std::size_t buf_size;
-    std::thread task;
     std::thread connect_task;
-
-
 };
 
 
