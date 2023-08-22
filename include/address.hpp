@@ -43,14 +43,6 @@ public:
         this->port = port;
     }
 
-    address_v4(address_v4&& other) noexcept : address(std::move(other.address)), hints(std::move(other.hints)), addr(std::move(other.addr)), port(std::move(other.port)) {
-        memset(&hints, 0, sizeof(hints));
-        hints.ai_family = AF_INET;
-        hints.ai_socktype = SOCK_STREAM;
-        hints.ai_flags = AI_PASSIVE;
-    }
-        
-    
 
     void freeInfo() {
         if (res != nullptr)

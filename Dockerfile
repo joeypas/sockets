@@ -1,8 +1,6 @@
-FROM ubuntu:latest
+FROM alpine:edge
 
-RUN apt-get -y update && apt-get install -y
-
-RUN apt-get -y install clang cmake build-essential zlib1g-dev
+RUN apk add --no-cache libgcc gcc g++ make cmake git zlib-dev
 
 COPY . /usr/src/sockets
 
@@ -10,6 +8,6 @@ WORKDIR /usr/src/sockets
 
 RUN sh build.sh
 
-CMD ["/bin/bash"]
+CMD ["./build/test_tree"]
 
 

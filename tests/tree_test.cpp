@@ -8,7 +8,7 @@ int main() {
     
         fs::path rootp = ft.getRootPath();
 
-        auto action = [rootp](shared_ptr<FileNode> node) {
+        auto action = [rootp](FileNode* node) {
             if (node->path == rootp) {
                 fs::path p(node->path);
                 cout << static_cast<string>(p.filename()) << endl;

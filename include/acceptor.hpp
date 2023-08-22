@@ -27,14 +27,10 @@ public:
         setsockopt(sockfd, SOL_SOCKET, SO_REUSEPORT, &opt, sizeof(int));
     }
 
-    /** 
-     * Move Constructor
-    */
-    acceptor(acceptor&& other) noexcept : sock((sock&&) other), backlog(std::move(other.backlog)), onNewConnection(std::move(other.onNewConnection)) {
-        other.sockfd = -1;
-        other.addr = nullptr;
+    ~acceptor() {
+        if (task.joinable())
+            task.join();
     }
-
     /**
      * Bind to specified host/port 
      * 
@@ -43,7 +39,7 @@ public:
      * @param ON_ERR error callback
     */
     void bind(const char* host, uint16_t port, ON_ERR) {
-        addr = new address_v4(0, port, host);
+        addr = std::make_unique<address_v4>(0, port, host);
         addr->setAddr(onError);
         addr->freeInfo();
         if (::bind(sockfd, (const sockaddr*)&addr->address, sizeof(addr->address)) == -1) {
@@ -85,8 +81,7 @@ public:
             onError(errno, "Failed to listen to the socket");
             return;
         }
-        std::thread t(eventLoop, this, onError);
-        t.detach();
+        task = std::move(std::thread{eventLoop, this, onError});
     }
 
 private:
@@ -115,8 +110,10 @@ private:
             e->onNewConnection(newsock);
             newsock->spawnTask(false, onError);
         }
+        e->close();
     }
 
     int backlog;
+    std::thread task;
 };
 #endif

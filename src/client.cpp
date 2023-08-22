@@ -13,8 +13,8 @@ int main() {
         cout << "Error: " << code << " : " << message << endl;
     });
 
-    client.onMessageSent = [&file](string message){
-        if (message.substr(0,3) == "RET") file = true;
+    client.onMessageSent = [&file](string_view message){
+        if (message.starts_with("RET")) file = true;
     };
 
     client.onMessageReceived = [&client, &file, &m](string message){

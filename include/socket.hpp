@@ -49,17 +49,9 @@ public:
 
     }
 
-    sock(sock&& other) noexcept : sockfd(std::move(other.sockfd)), buf_size(std::move(other.buf_size)), addr(std::move(other.addr)), onMessageReceived(std::move(other.onMessageReceived)), onMessageSent(std::move(other.onMessageSent)), onSocketClosed(std::move(other.onSocketClosed)) {
-        other.sockfd = -1;
-        other.addr = nullptr;
-        
-    }
-
-    ~sock() {
-        if (addr != nullptr) {
-            delete addr;
-        }
-    }
+    /**
+     * Destructor
+    */
 
     void setMaxSize(int size) {
         buf_size = size;
@@ -72,7 +64,7 @@ public:
     /**
      * Close the socket
     */
-    void close() const {
+    void close() {
         ::close(sockfd);
         if (onSocketClosed)
             onSocketClosed(errno);
@@ -87,18 +79,16 @@ public:
         char ipStr[INET_ADDRSTRLEN];
         inet_ntop(AF_INET, &(ad.sin_addr), ipStr, INET_ADDRSTRLEN);
         std::string ip(ipStr);
-        addr = new address_v4(0, (uint16_t)ad.sin_port, ip.c_str());
+        addr = std::make_unique<address_v4>(0, (uint16_t)ad.sin_port, ip.c_str());
         addr->freeInfo();
     }
-
     /**
      * Get pointer to address object
      * 
      * @return pointer to address object of socket
     */
     address_v4* getAddr() {
-
-        return addr;
+        return addr.get();
     }
 
     /**
@@ -110,8 +100,9 @@ public:
      * @param ON_ERR function callback on error
     */
     void connect(const char* host, uint16_t port, std::function<void(address_v4*)> const& onConnected, ON_ERR) {
-        addr = new address_v4(0, port, host);
+        addr = std::make_unique<address_v4>(0, port, host);
         auto info = addr->getInfo(onError);
+        struct addrinfo *p;
 
         for (p = info; p != nullptr; p = p->ai_next) {
             if (p->ai_family == AF_INET) {
@@ -134,11 +125,11 @@ public:
             return;
         }
 
-        onConnected(addr);
+        onConnected(addr.get());
 
 
-        std::thread t(createTask, this, onError);
-        t.detach();
+        connect_task = std::thread{&createTask, this, onError};
+        connect_task.detach();
     } 
     
     /**
@@ -224,14 +215,14 @@ public:
             onMessageSent(message);
         }
     }
-
+   
     /**
      * Create a new thread to send and receive on 
     */
     void spawnTask(bool dele = false, ON_ERR) {
         this->del = dele;
-        std::thread t(createTask, std::move(this), onError);
-        t.detach();
+        task = std::thread{createTask, this, onError};
+        task.detach();
     }
 
     bool del = false;
@@ -253,7 +244,6 @@ protected:
             len = recv(s->sockfd, buffer, buf_size, 0);
             // Remote socket closed
             if (len == 0) {
-                delete[] buffer;
                 s->close();
                 s->del = true;
                 break;
@@ -261,10 +251,8 @@ protected:
             // Error 
             else if (len < 0) {
                 onError(errno, "Failed to Recieve");
-                delete[] buffer;
                 s->close();
                 s->del = true;
-                break;
             }
             // Data received 
             else {
@@ -273,7 +261,7 @@ protected:
 
                 // Stop receive blocking to check for data
                 fcntl(s->sockfd, F_SETFL, O_NONBLOCK);
-                if (!(recv(s->sockfd, buffer, buf_size, MSG_PEEK) >= 1)){
+                if (len = !(recv(s->sockfd, buffer, buf_size, MSG_PEEK) >= 1)){
                     // No more data to rec run callback
                     std::string data(in_buf.data(), total_len);
                     if (s->onRawReceived)
@@ -285,23 +273,25 @@ protected:
                     in_buf = std::vector<char>(0);
                     total_len = 0;
                 }
-                fcntl(s->sockfd, F_SETFL, O_FSYNC);
-                delete[] buffer;
+                fcntl(s->sockfd, F_SETFL, O_SYNC);
             }
+            delete[] buffer;
         }
+
         // If we're done with the socket, delete it
-        if (s->del && s != nullptr) {
-            delete s;
-        } else {
+        if (!(s->del) && s != nullptr) {
             createTask(s);
+        } else {
+            delete s;
         }
     }
 
     int sockfd;
-    address_v4* addr;
-    struct addrinfo *p;
-
+    std::unique_ptr<address_v4> addr;
     std::size_t buf_size;
+    std::thread task;
+    std::thread connect_task;
+
 
 };
 

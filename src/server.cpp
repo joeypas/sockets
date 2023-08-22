@@ -13,7 +13,6 @@
 using namespace std;
 
 int main() {
-    mutex m;
     // Get the current directory when the program starts
     auto* cwd = new char[FILENAME_MAX];
     getcwd(cwd, FILENAME_MAX);
@@ -27,7 +26,7 @@ int main() {
     });
 
     // Set the callback function for when new connection is accepted passes socket that was created
-    server.onNewConnection = [&workingDIR, &m](sock* s) {
+    server.onNewConnection = [&workingDIR](sock* s) {
         size_t buf_size = s->getMaxSize();
         auto addr = s->getAddr();
         string addrStr(addr->getAddrStr());
@@ -35,8 +34,7 @@ int main() {
         cout << "New connection: " << addr->getAddrStr() << ":" << addr->getPort() << endl;
 
         // Callback for when server receives message on new socket if command is sent execute that command
-        s->onMessageReceived = [s, addrStr, &workingDIR, buf_size, &m](string message) {
-            m.lock();
+        s->onMessageReceived = [s, addrStr, &workingDIR, buf_size](string message) {
             cout << "[" << addrStr << "]: " << message << endl;
             string ret;
             // Close the socket 
@@ -83,11 +81,11 @@ int main() {
                 stringstream ss;
                 fs::path p(workingDIR);
 
-                FileTree ft(p);
-                auto rootp = ft.getRootPath();
+                FileTree* ft = new FileTree(p);
+                auto rootp = ft->getRootPath();
 
                 // function to get the listing, push strings to a string stream
-                auto action = [rootp, &ss](shared_ptr<FileNode> node) {
+                auto action = [rootp, &ss](FileNode* node) {
                     if (node->path == rootp) {
                         fs::path p(node->path);
                         ss << static_cast<string>(p.filename()) << endl;
@@ -102,7 +100,7 @@ int main() {
                     }
                 };
 
-                cppcoro::sync_wait(ft.fileAction(action));
+                cppcoro::sync_wait(ft->fileAction(action));
 
                 // move contents from stringstream to vector
                 vector<string> st(0);
@@ -138,6 +136,7 @@ int main() {
                     }
                     s->sendall(send);
                 }
+                delete ft;
             }
 
             // Send a file
@@ -202,7 +201,6 @@ int main() {
                 ret.shrink_to_fit();
                 s->sendall(ret);
             }
-            m.unlock();
         };
 
         // Callback for when remote socket closes
@@ -213,12 +211,12 @@ int main() {
     };
 
     // Callback for when server binds to address and port
-    server.bind("127.0.0.1", 8888, [](int code, string message) {
+    server.bind("127.0.0.1", 8888, [](int code, string_view message) {
         cout << code << " : " << message << endl;
     });
 
     // Begin non-blocking acceptor loop
-    server.beginEventLoop([](int code, string message){
+    server.beginEventLoop([](int code, string_view message){
         cout << code << " : " << message << endl;
     });
 
