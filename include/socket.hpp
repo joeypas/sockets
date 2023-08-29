@@ -51,7 +51,9 @@ public:
 
     virtual ~sock() {
         this->del = true;
-        close();
+        if (::send(sockfd, nullptr, 0, MSG_NOSIGNAL) != -1)
+            close();
+
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
     }
 
@@ -245,8 +247,11 @@ protected:
         
         while (len >= 0 && s->del == false) {
             auto* buffer = new char[buf_size];
-            if (!(recv(s->sockfd, buffer, buf_size, MSG_PEEK) >= 1)) {
+            if (recv(s->sockfd, buffer, buf_size, MSG_PEEK) < 1 || ::send(s->sockfd, buffer, 0, MSG_NOSIGNAL) == -1) {
                 fcntl(s->sockfd, F_SETFL, O_NONBLOCK);
+                s->del = true;
+                delete[] buffer;
+                break;
             }
             len = recv(s->sockfd, buffer, buf_size, 0);
             // Remote socket closed
@@ -285,7 +290,7 @@ protected:
             delete[] buffer;
         }
 
-        std::cout << "HERE" << std::endl;
+        
 
        /*If we're done with the socket, delete it
         if (!(s->del) && s != nullptr) {
