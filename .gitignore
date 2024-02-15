@@ -2,6 +2,7 @@
 build
 .vscode
 .clangd
+.cache
 lib
 include/cppcoro
 include/snappy
