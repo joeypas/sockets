@@ -53,7 +53,7 @@ public:
         this->del = true;
         if (::send(sockfd, nullptr, 0, MSG_NOSIGNAL) != -1)
             close();
-
+        //connect_task.join();
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
     }
 
@@ -295,9 +295,10 @@ protected:
        /*If we're done with the socket, delete it
         if (!(s->del) && s != nullptr) {
             createTask(s);
-        }  else {d
+        }  else {
             delete s;
-        } */
+        }
+        */
     }
 
     int sockfd;

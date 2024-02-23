@@ -29,11 +29,11 @@ public:
 
     /**
      * Destructor
-    */
+    **/
     ~acceptor() {
-        task.join();
+        connect_task.join();
     }
-
+    
     /**
      * Bind to specified host/port 
      * 
@@ -84,7 +84,7 @@ public:
             onError(errno, "Failed to listen to the socket");
             return;
         }
-        task = std::thread{&eventLoop, this, onError};
+        connect_task = std::thread{&eventLoop, this, onError};
     }
 
 private:
@@ -127,6 +127,6 @@ private:
     }
 
     int backlog;
-    std::thread task;
+    //std::thread task;
 };
 #endif
